@@ -11,10 +11,18 @@ class vehicle:
     vehicId = -1
     seatNum = 5
     seatOccup = 0
-    custList = []
+    orderList = []
     latestLoct = mt.Location(-1.0, -1.0, -1.0)
     # latestLoct = mt.location(lat, lng, time)
     nextStop = mt.Location(-1.0, -1.0, -1.0)
+    
+    def getOrdById(self, orderId):
+        """
+        """
+        for o in self.orderList:
+            if o.orderId == orderId:
+                return o
+        return None
     
     def getDestOrder(self):
         """To solve the TSP and return the list of destinations with 
@@ -32,16 +40,22 @@ class vehicle:
         return None
     
     def getOrder(self, order):
+        """When the vehicle decides to get the order,
+        it needs to replan its route, while the ETAs 
+        of the customers on the vehicle are changed. 
+        Simultaneously, the getOnTime and the of the new customer
+        are also firmed. Thus the new order with 
+        """
         return order
     
     def getCustOn(self, order):
-        """To return the order with updated eta and vehicle.
+        """To return the order with updated ETA and vehicle.
         """
         self.custList.append(order)
         self.seatOccup += 1
         order.vehicle = self
         for cust in self.custList:
-            cust.orderEta = self.custOffTime(cust)
+            cust.getOffTime = self.custOffTime(cust)
         # replan the route
         
         return order
@@ -57,8 +71,8 @@ class vehicle:
     def isUnacceptable(self, order, ratio = 1.5):
         offTime = self.custOffTime(order)
         duration = offTime - order.orderTime
-        etc = mt.getEtc(order.origin, order.destin)
-        if (duration > ratio * etc):
+        eta = mt.getEta(order.origin, order.destin)
+        if (duration > ratio * eta):
             return False
         else:
             return True

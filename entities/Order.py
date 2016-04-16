@@ -9,10 +9,12 @@ from tools import mapTool as mt
 from main import START_TIME, END_TIME
 
 class Order:
+    orderId = -1
     custId = -1
     orderTime = START_TIME
     # estimated time of arrival, considering the current condition.
-    orderEta = END_TIME
+    getOnTime = END_TIME
+    getOffTime = END_TIME
     origin = mt.Stop(-1, -1)
     # origin = stop(o_lat, o_lng)
     destin = mt.Stop(-1, -1)
@@ -20,17 +22,20 @@ class Order:
     stEta = mt.getEta(origin, destin)
     vehicle = None
 
-    def __init__(self, custId, orderTime, origin, destin, 
-                 vehicle = None, orderEta = END_TIME):
+    def __init__(self, orderId, custId, orderTime, origin, destin, 
+                 vehicle = None, getOnTime = END_TIME, getOffTime = END_TIME):
+        self.orderId = orderId
         self.custId = custId
         self.orderTime = orderTime
         self.origin = origin
         self.destin = destin
-        self.vehicle = None
-        self.orderEta = END_TIME
+        self.vehicle = vehicle
+        self.getOnTime = getOnTime
+        self.getOffTime = getOffTime
 
     def getOrderBySr(self, eventSr):
-        order = Order(eventSr['custId'], 
+        order = Order(eventSr['orderId'], 
+                      eventSr['custId'], 
                       eventSr['orderTime'],
                       mt.Stop(eventSr['o_lat'], 
                               eventSr['o_lng']), 
