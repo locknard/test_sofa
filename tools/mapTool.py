@@ -8,17 +8,17 @@ Created on Fri Apr 15 23:27:06 2016
 import numpy as np
 
 class Stop:
-    lat = -1
-    lng = -1
+    lat = -1.0
+    lng = -1.0
     
     def __init__(self, lat, lng):
         self.lat = lat
         self.lng = lng
 
 class Location:
-    lat = -1
-    lng = -1
-    time = 0
+    lat = -1.0
+    lng = -1.0
+    time = 0.0
     
     def __init__(self, lat, lng, time):
         self.lat = lat
@@ -26,7 +26,7 @@ class Location:
         self.time = time
 
 def convert_to_meter(X, lat):
-    radius = 6371000
+    radius = 6371000.0
     alpha = np.pi*radius/180.0
     Y = X.copy()
     Y.iloc[:, 0] = X.iloc[:, 1] * alpha * np.cos(lat*np.pi/180.0)  #lng
@@ -34,7 +34,7 @@ def convert_to_meter(X, lat):
     return Y
 
 def convert_to_latlng(Y, lat):
-    radius = 6371000
+    radius = 6371000.0
     alpha = np.pi*radius/180.0
     X = Y.copy()
     X.iloc[:, 1] = Y.iloc[:, 0] / (alpha * np.cos(lat*np.pi/180.0))

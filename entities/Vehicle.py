@@ -12,9 +12,9 @@ class vehicle:
     seatNum = 5
     seatOccup = 0
     custList = []
-    latestLoct = mt.Location(-1, -1, -1)
+    latestLoct = mt.Location(-1.0, -1.0, -1.0)
     # latestLoct = mt.location(lat, lng, time)
-    nextStop = mt.Location(-1, -1, -1)
+    nextStop = mt.Location(-1.0, -1.0, -1.0)
     
     def getDestOrder(self):
         """To solve the TSP and return the list of destinations with 
