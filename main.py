@@ -13,16 +13,19 @@ NOT_DEFINED = None
 
 # initialization
 orderDf = NOT_DEFINED
+# columns of orderDf: custId, o_lat, o_lng, d_lat, d_lng, orderTime
 lostOrder = 0
-vehicList = []
-# eventDf
-# columns: custId, o_lat, o_lng, d_lat, d_lng, orderTime, time, 
-# orderId, vehicId, eventType
+vehicDf = NOT_DEFINED
+# columns of vehicDf: vehicId, seatNum
+
 eventDf = orderDf.loc[:,['custId','o_lat','o_lng','d_lat','d_lng','orderTime']]
 eventDf['time'] = eventDf['orderTime']
 eventDf['orderId'] = eventDf.index
 eventDf['vehicId'] = -1
 eventDf['eventType'] = 'order'
+# eventDf
+# columns: custId, o_lat, o_lng, d_lat, d_lng, orderTime, time, 
+# orderId, vehicId, eventType
 
 # simulation
 while len(eventDf) != 0:
@@ -31,9 +34,9 @@ while len(eventDf) != 0:
     nextEvent = eventDf.loc[evInx,:]
     
     ### Event of placing an order ###
-    if (eventDf.at[evInx,'eventType'] == 'order'):
+    if (nextEvent['eventType'] == 'order'):
         order = Order.Order.getOrderBySr(nextEvent)
-        vehicle = Order.Order.searchVehicle(order, vehicList)
+        vehicle = Order.Order.searchVehicle(order, vehicDf)
         if (vehicle == None):
             lostOrder += 1
             del order
@@ -60,9 +63,10 @@ while len(eventDf) != 0:
             eventDf.loc[len(eventDf)] = getOnEvent
 
     ### Event of getting on the vehicle ###
-    if (nextEvent == 'getOn'):
-        order = nextEvent[1]
+    if (nextEvent['eventType'] == 'getOn'):
+        vehicId = nextEvent['vehicId']
+        
         print 'getOn'
     ### Event of getting on the vehicle ###
-    if (nextEvent == 'getOff'):
+    if (nextEvent['eventType'] == 'getOff'):
         print 'getOff'
