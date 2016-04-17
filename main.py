@@ -11,12 +11,19 @@ START_TIME = 0
 END_TIME = 86400
 NOT_DEFINED = None
 
-# initialization
+## initialization ##
 orderDf = NOT_DEFINED
 # columns of orderDf: custId, o_lat, o_lng, d_lat, d_lng, orderTime
 lostOrder = 0
 vehicDf = NOT_DEFINED
 # columns of vehicDf: vehicId, seatNum
+# Initialize vehicDf by adding columns: initLoct, orderIdList, latestLoct,
+# nextStop
+# {'lat': -1, 'lng': -1, 'time': -1}
+vehicDf.index = vehicDf['vehicId']
+vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
+vehicDf['latestLoct'] = vehicDf['nextStop'] = [{'lat': -1, 'lng': -1, 
+                            'time': -1} for _ in range(len(vehicDf))]
 
 eventDf = orderDf.loc[:,['custId','o_lat','o_lng','d_lat','d_lng','orderTime']]
 eventDf['time'] = eventDf['orderTime']
@@ -27,7 +34,7 @@ eventDf['eventType'] = 'order'
 # columns: custId, o_lat, o_lng, d_lat, d_lng, orderTime, time, 
 # orderId, vehicId, eventType
 
-# simulation
+## simulation ##
 while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
@@ -65,8 +72,14 @@ while len(eventDf) != 0:
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOn'):
         vehicId = nextEvent['vehicId']
-        
-        print 'getOn'
+        orderId = nextEvent['orderId']
+        vehicDf[(vehicDf.vehicId == vehicId)]
+        # add the customer to the vehicle's orderList
+        vehicDf[vehicDf.index == 
+                vehicId].orderIdList[vehicId].append(nextEvent['orderId'])
+        vehicDf.loc[vehicId, 'seatOccup'] += 1
+        vehicDf[vehicDf.index == vehicId].latestLoct[vehicId]['lat'] = None
+
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
         print 'getOff'
