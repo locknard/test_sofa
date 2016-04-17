@@ -57,6 +57,7 @@ while len(eventDf) != 0:
             lostOrder += 1
             del order
         else:
+            # The vehicle decide to take the new order.
             vehicle.getOrder(order, orderDf, vehicDf, eventDf)
             del order
 
@@ -66,11 +67,16 @@ while len(eventDf) != 0:
         vehicle = Vehicle.Vehicle(vehicId, vehicDf)
         orderId = nextEvent['orderId']
         order = Order.Order(orderId, orderDf)
-        # vehicDf[(vehicDf.vehicId == vehicId)]
         vehicle.getCustOn(order, orderDf, vehicDf, eventDf)
         del order
         del vehicle
         
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
-        print 'getOff'
+        vehicId = nextEvent['vehicId']
+        vehicle = Vehicle.Vehicle(vehicId, vehicDf)
+        orderId = nextEvent['orderId']
+        order = Order.Order(orderId, orderDf)
+        vehicle.getCustOff(order, orderDf, vehicDf, eventDf)
+        del order
+        del vehicle

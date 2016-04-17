@@ -55,25 +55,29 @@ class Vehicle:
         are also firmed and the order event is deleted from eventDf.
         """
         # This piece of code has not been finished yet.
-        # update the get-off events related to the vehicle.
+        # Update the get-off events related to the vehicle.
         # Notice that vectorization is feasible for this piece of code.
         # ixList is the list of coresponding event index 
         ixList = eventDf[(eventDf['eventType'] == 'getOff') & 
-                (eventDf['vehicId'] == vehicle.vehicId)].index
-        eventDf.loc[ixList, 'vehicId'] = vehicle.vehicId
-
+                (eventDf['vehicId'] == self.vehicId)].index
+        eventDf.loc[ixList, 'vehicId'] = self.vehicId
+        # add the customer to the vehicle's orderList
+        
+        
         for ix in ixList:
             # update the occurrence time of the related get-off events
             # vehicle.custList[order].getOfftime has been updated
             # in vehicle.getOrder # eventDf.loc[ix, :]
             orderId = eventDf.loc[ix, 'orderId']
-            eventDf.loc[ix, 'getOffTime'] = vehicle.getOrdById(orderId)
+            eventDf.loc[ix, 'getOffTime'] = self.getOrdById(orderId)
 
         # arrange the get-on event of the new customer
         getOnEvent = [order.custId, order.o_lat, order.o_lng, 
          order.d_lat, order.d_lng, order.orderTime, 
          order.getOnTime, order.orderId, order.vehicId, 'getOn']
         eventDf.loc[len(eventDf)] = getOnEvent
+        # replan the route.
+        
         # delete the order event from eventDf.
         
     
@@ -86,7 +90,7 @@ class Vehicle:
         for cust in self.custList:
             cust.getOffTime = self.custOffTime(cust)
 
-        # add the customer to the vehicle's orderList
+        
         vehicDf[vehicDf.index == 
                 self.vehicId].orderIdList[self.vehicId].append(order.orderId)
         vehicDf.loc[self.vehicId, 'seatOccup'] += 1
@@ -97,12 +101,8 @@ class Vehicle:
         vehicDf[vehicDf.index ==
               self.vehicId].latestLoct[self.vehicId]['time'] = order.getOnTime
 
-        # replan the route
-        
-        
-        
-        
-        return order
+        # Arrange the get-off event
+
     
     def getCustOff(self, order):
         print order.custId + "get off"
