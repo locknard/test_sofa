@@ -5,7 +5,8 @@ Created on Fri Apr 15 23:20:51 2016
 @author: derry
 """
 
-from entities import Order
+from entities import Order, Vehicle
+from tools import mapTool as mt
 
 START_TIME = 0
 END_TIME = 86400
@@ -13,73 +14,63 @@ NOT_DEFINED = None
 
 ## initialization ##
 orderDf = NOT_DEFINED
-# columns of orderDf: custId, o_lat, o_lng, d_lat, d_lng, orderTime
-lostOrder = 0
+# columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
+# getOnTime, getOffTime, vehicId.
+orderDf.index = orderDf['orderId']
+orderDf['getOnTime'] = orderDf['getOffTime'] = orderDf['vehicId'] = -1
+orderDf['ETA'] = orderDf[['o_lat', 'o_lng', 'd_lat','d_lng']].apply(mt.getEta)  
+
+
 vehicDf = NOT_DEFINED
 # columns of vehicDf: vehicId, seatNum
 # Initialize vehicDf by adding columns: initLoct, orderIdList, latestLoct,
-# nextStop
-# {'lat': -1, 'lng': -1, 'time': -1}
+# nextStop.
+# The form of initLoct, latestLoct, and nextStop:
+# {'lat': -1, 'lng': -1, 'time': -1}.
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['latestLoct'] = vehicDf['nextStop'] = [{'lat': -1, 'lng': -1, 
                             'time': -1} for _ in range(len(vehicDf))]
 
-eventDf = orderDf.loc[:,['custId','o_lat','o_lng','d_lat','d_lng','orderTime']]
-eventDf['time'] = eventDf['orderTime']
-eventDf['orderId'] = eventDf.index
+eventDf = orderDf.loc[:,['orderId', 'orderTime']]
+eventDf.columns = 'orderId', 'time'
 eventDf['vehicId'] = -1
 eventDf['eventType'] = 'order'
 # eventDf
-# columns: custId, o_lat, o_lng, d_lat, d_lng, orderTime, time, 
-# orderId, vehicId, eventType
+# columns: time, orderId, vehicId, eventType
+lostOrder = 0
 
 ## simulation ##
 while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
-    nextEvent = eventDf.loc[evInx,:]
+    nextEvent = eventDf.loc[evInx, :]
     
     ### Event of placing an order ###
     if (nextEvent['eventType'] == 'order'):
-        order = Order.Order.getOrderBySr(nextEvent)
-        vehicle = Order.Order.searchVehicle(order, vehicDf)
+        orderId = nextEvent['orderId']
+        # crtOrderDf (current order df) is a dataframe
+        # crtOrderDf = orderDf[(orderDf.index == orderId)]
+        order = Order.Order(orderId, orderDf)
+        vehicle = order.searchVehicle(vehicDf)
         if (vehicle == None):
             lostOrder += 1
             del order
         else:
-            order = vehicle.getOrder(order)
-            # update the get-off events related to the vehicle.
-            # Notice that vectorization is feasible for this piece of code.
-            # ixList is the list of coresponding event index 
-            ixList = eventDf[(eventDf['eventType'] == 'getOff') & 
-                    (eventDf['vehicId'] == vehicle.vehicId)].index
-            eventDf.loc[ixList, 'vehicId'] = vehicle.vehicId
-
-            for ix in ixList:
-                # update the occurrence time of the related get-off events
-                # vehicle.custList[order].getOfftime has been updated
-                # in vehicle.getOrder # eventDf.loc[ix, :]
-                orderId = eventDf.loc[ix, 'orderId']
-                eventDf.loc[ix, 'getOffTime'] = vehicle.getOrdById(orderId)
-
-            # arrange the get-on event of the new customer
-            getOnEvent = [order.custId, order.o_lat, order.o_lng, 
-             order.d_lat, order.d_lng, order.orderTime, 
-             order.getOnTime, order.orderId, order.vehicId, 'getOn']
-            eventDf.loc[len(eventDf)] = getOnEvent
+            vehicle.getOrder(order, orderDf, vehicDf, eventDf)
+            del order
 
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOn'):
         vehicId = nextEvent['vehicId']
+        vehicle = Vehicle.Vehicle(vehicId, vehicDf)
         orderId = nextEvent['orderId']
-        vehicDf[(vehicDf.vehicId == vehicId)]
-        # add the customer to the vehicle's orderList
-        vehicDf[vehicDf.index == 
-                vehicId].orderIdList[vehicId].append(nextEvent['orderId'])
-        vehicDf.loc[vehicId, 'seatOccup'] += 1
-        vehicDf[vehicDf.index == vehicId].latestLoct[vehicId]['lat'] = None
-
+        order = Order.Order(orderId, orderDf)
+        # vehicDf[(vehicDf.vehicId == vehicId)]
+        vehicle.getCustOn(order, orderDf, vehicDf, eventDf)
+        del order
+        del vehicle
+        
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
         print 'getOff'

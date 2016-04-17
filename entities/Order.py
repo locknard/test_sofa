@@ -6,42 +6,29 @@ Created on Fri Apr 15 22:58:52 2016
 """
 
 from tools import mapTool as mt
-from main import START_TIME, END_TIME
 
 class Order:
-    orderId = -1
-    custId = -1
-    orderTime = START_TIME
-    # estimated time of arrival, considering the current condition.
-    getOnTime = END_TIME
-    getOffTime = END_TIME
-    origin = mt.Stop(-1, -1)
-    # origin = stop(o_lat, o_lng)
-    destin = mt.Stop(-1, -1)
-    # Standard estimated time of arrival, only related with OD positions.
-    stEta = mt.getEta(origin, destin)
-    vehicle = None
 
-    def __init__(self, orderId, custId, orderTime, origin, destin, 
-                 vehicle = None, getOnTime = END_TIME, getOffTime = END_TIME):
+    def __init__(self, orderId, orderDf):
         self.orderId = orderId
-        self.custId = custId
-        self.orderTime = orderTime
-        self.origin = origin
-        self.destin = destin
-        self.vehicle = vehicle
-        self.getOnTime = getOnTime
-        self.getOffTime = getOffTime
-
-    def getOrderBySr(self, eventSr):
-        order = Order(eventSr['orderId'], 
-                      eventSr['custId'], 
-                      eventSr['orderTime'],
-                      mt.Stop(eventSr['o_lat'], 
-                              eventSr['o_lng']), 
-                      mt.Stop(eventSr['d_lat'], 
-                              eventSr['d_lng']))
-        return order
+        self.orderTime = orderDf[orderDf.index == 
+                                 orderId].orderTime[orderId]
+        o_lat = orderDf[orderDf.index == 
+                                 orderId].o_lat[orderId]
+        o_lng = orderDf[orderDf.index == 
+                                 orderId].o_lng[orderId]
+        self.origin = mt.Stop(o_lat, o_lng)
+        d_lat = orderDf[orderDf.index == 
+                                 orderId].d_lat[orderId]
+        d_lng = orderDf[orderDf.index == 
+                                 orderId].d_lng[orderId]        
+        self.destin = mt.Stop(d_lat, d_lng)
+        self.vehicle = orderDf[orderDf.index == 
+                                 orderId].vehicle[orderId]
+        self.getOnTime = orderDf[orderDf.index == 
+                                 orderId].getOnTime[orderId]
+        self.getOffTime = orderDf[orderDf.index == 
+                                 orderId].getOffTime[orderId]
 
     def searchVehicle(self, vehicList):
         """search the optimum matching vehicle near the customer.

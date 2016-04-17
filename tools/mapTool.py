@@ -8,17 +8,12 @@ Created on Fri Apr 15 23:27:06 2016
 import numpy as np
 
 class Stop:
-    lat = -1.0
-    lng = -1.0
     
     def __init__(self, lat, lng):
         self.lat = lat
         self.lng = lng
 
 class Location:
-    lat = -1.0
-    lng = -1.0
-    time = 0.0
     
     def __init__(self, lat, lng, time):
         self.lat = lat
@@ -41,7 +36,7 @@ def convert_to_latlng(Y, lat):
     X.iloc[:, 0] = Y.iloc[:, 1] / alpha
     return X
 
-def getEta(origin, destin):
+def getEta(o_lat, o_lng, d_lat, d_lng):
     return None
 
 def getAngle(OD_1, OD_2):
