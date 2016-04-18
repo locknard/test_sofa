@@ -7,9 +7,9 @@ Created on 20160418
 
 from tools import mapTool as mt
 
-#odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy'
+#odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy','os','ds'
 #odf.index=orderId
-#vdf:'vehicId','seatNum','orderIdList','latestLoct','nextStop'
+#vdf:'vehicId','seatNum','orderIdList','x','y','time','nextStop'
 #vdf.index=vehicId
 #edf:'orderId','time','vehicId','eventType'
 #edf.index= (automatic)
@@ -29,7 +29,7 @@ def addOrder(oid,vid,odf,vdf,edf):
     #add order to vehicle.
     odf.loc[oid,'vehicId']=vid
     vdf.loc[vid,'orderIdList'].append(oid)
-    print vdf
+    
     #add a get on event.
     #replan the route.
     #add the get off events for this order.

@@ -36,8 +36,11 @@ def convert_to_latlng(Y, lat):
     X.iloc[:, 0] = Y.iloc[:, 1] / alpha
     return X
 
-def getEta(o_lat, o_lng, d_lat, d_lng):
-    return None
+def getEta(df):
+    speed=10.0  #meters/second
+    x=df['ox']-df['dx']
+    y=df['oy']-df['dy']
+    return (abs(x)+abs(y))/speed
 
 def getAngle(OD_1, OD_2):
     return None

@@ -12,6 +12,8 @@ import pandas as pd
 import datetime
 import sys
 import random as rd
+import scipy.spatial.distance as distance
+import numpy as np
 
 
 print 
@@ -33,6 +35,14 @@ left=116.30787
 right=116.37215
 
 ## initialization ##
+stationDf=pd.read_csv(open("stations","r"),sep='\t',header=0)
+tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
+
+stationDf['x']=tmp.iloc[:,0]
+stationDf['y']=tmp.iloc[:,1]
+
+print "%d stations loaded."%(len(stationDf))
+
 
 tmp=pk.load(open("sampleDemandPickle","rb"))
 tmp['getOnTime']=-1
@@ -64,28 +74,33 @@ orderDf['dy']=tmp.iloc[:,1]
 # getOnTime, getOffTime, vehicId.
 orderDf.index = orderDf['orderId']
 orderDf['getOnTime'] = orderDf['getOffTime'] = orderDf['vehicId'] = -1
-#orderDf['ETA'] = orderDf[['o_lat', 'o_lng', 'd_lat','d_lng']].apply(mt.getEta)
-'''
-@todo: eta function
-'''  
-orderDf['ETA']=[-1]*len(orderDf)
+dis=distance.cdist(orderDf[['ox','oy']], stationDf[['x','y']], 'cityblock')
+minIndex=np.argmin(dis,1)
+orderDf['os']= minIndex+1
+
+dis=distance.cdist(orderDf[['dx','dy']], stationDf[['x','y']], 'cityblock')
+minIndex=np.argmin(dis,1)
+orderDf['ds']= minIndex+1
+orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
+
+
 print "%d orders loaded."%(len(orderDf))
 #print orderDf
 
+left=min([np.min(orderDf['ox']),np.min(orderDf['dx'])])
+right=max([np.max(orderDf['ox']),np.max(orderDf['dx'])])
+down=min([np.min(orderDf['oy']),np.min(orderDf['dy'])])
+up=max([np.max(orderDf['oy']),np.max(orderDf['dy'])])
 
 vehicDf=pd.DataFrame(columns=[['vehicId','seatNum']])
 vehicDf['vehicId']=range(NUM_OF_VEHICLES)
 vehicDf['seatNum']=5
-
-# columns of vehicDf: vehicId, seatNum
-# Initialize vehicDf by adding columns: initLoct, orderIdList, latestLoct,
-# nextStop.
-# The form of initLoct, latestLoct, and nextStop:
-# {'lat': -1, 'lng': -1, 'time': -1}.
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
-vehicDf['latestLoct'] = vehicDf['nextStop'] = [{'lat': rd.uniform(down,up), 'lng': rd.uniform(left,right), 
-                            'time': 0} for _ in range(len(vehicDf))]
+vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
+vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
+vehicDf['time']=0
+vehicDf['nextStop'] =0
 print "%d vechicles created."%(len(vehicDf))
 #print vehicDf
 
@@ -100,13 +115,7 @@ eventDf['eventType'] = 'order'
 
 print "%d events added to the eventlist."%(len(eventDf))
 
-stationDf=pd.read_csv(open("stations","r"),sep='\t',header=0)
-tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
 
-stationDf['x']=tmp.iloc[:,0]
-stationDf['y']=tmp.iloc[:,1]
-
-print "%d stations loaded."%(len(stationDf))
 
 lostOrder = 0
 
