@@ -7,13 +7,29 @@ Created on Fri Apr 15 23:20:51 2016
 
 from entities import Order, Vehicle
 from tools import mapTool as mt
-
+import pickle as pk
 START_TIME = 0
 END_TIME = 86400
 NOT_DEFINED = None
 
 ## initialization ##
 orderDf = NOT_DEFINED
+tmp=pk.load(open("sampleDemandPickle","rb"))
+tmp['getOnTime']=-1
+tmp['getOffTime']=-1
+tmp['vehicId']=-1
+tmp['orderId']=range(len(tmp))
+tmp['o_lat']=tmp[1]
+tmp['o_lng']=tmp[2]
+tmp['d_lat']=tmp[3]
+tmp['d_lng']=tmp[4]
+tmp['orderTime']=tmp['time']
+
+orderDf=tmp[['orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId']]
+orderDf.index=tmp['orderId']
+print orderDf.head()
+
+
 # columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
 # getOnTime, getOffTime, vehicId.
 orderDf.index = orderDf['orderId']

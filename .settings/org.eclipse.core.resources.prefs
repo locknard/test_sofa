@@ -1,6 +1,5 @@
 eclipse.preferences.version=1
 encoding//entities/Order.py=utf-8
 encoding//entities/Vehicle.py=utf-8
-encoding//tools/Heap.py=utf-8
 encoding//tools/mapTool.py=utf-8
 encoding/main.py=utf-8
