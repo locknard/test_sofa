@@ -41,6 +41,8 @@ tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
 stationDf['x']=tmp.iloc[:,0]
 stationDf['y']=tmp.iloc[:,1]
 
+stationDf['stationId']=stationDf['stationId'].astype(int)
+stationDf.index=stationDf['stationId']
 print "%d stations loaded."%(len(stationDf))
 
 
@@ -78,14 +80,15 @@ dis=distance.cdist(orderDf[['ox','oy']], stationDf[['x','y']], 'cityblock')
 minIndex=np.argmin(dis,1)
 orderDf['os']= minIndex+1
 
+
 dis=distance.cdist(orderDf[['dx','dy']], stationDf[['x','y']], 'cityblock')
 minIndex=np.argmin(dis,1)
 orderDf['ds']= minIndex+1
+orderDf[['os','ds']]=orderDf[['os','ds']].astype(int)
 orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
 
-
 print "%d orders loaded."%(len(orderDf))
-#print orderDf
+
 
 left=min([np.min(orderDf['ox']),np.min(orderDf['dx'])])
 right=max([np.max(orderDf['ox']),np.max(orderDf['dx'])])
@@ -95,8 +98,10 @@ up=max([np.max(orderDf['oy']),np.max(orderDf['dy'])])
 vehicDf=pd.DataFrame(columns=[['vehicId','seatNum']])
 vehicDf['vehicId']=range(NUM_OF_VEHICLES)
 vehicDf['seatNum']=5
+vehicDf['seatRemains']=5
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
+vehicDf['stationIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
 vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
 vehicDf['time']=0
@@ -117,15 +122,14 @@ print "%d events added to the eventlist."%(len(eventDf))
 
 
 
-lostOrder = 0
+
 
 ## simulation ##
 print
 print "Simulation started."
-
 sys.stdout.flush()
 
-
+lostOrder = 0
 while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
@@ -147,7 +151,7 @@ while len(eventDf) != 0:
         else:
             # The vehicle decide to take the new order.
             print "\t\t vehicle with id %d is chosen."%(vehicleId)
-            addOrder(orderId, vehicleId,orderDf,vehicDf,eventDf)
+            addOrder(orderId, vehicleId,orderDf,vehicDf,eventDf,stationDf)
 
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOn'):

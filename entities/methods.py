@@ -6,10 +6,10 @@ Created on 20160418
 
 
 from tools import mapTool as mt
-
+import itertools
 #odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy','os','ds'
 #odf.index=orderId
-#vdf:'vehicId','seatNum','orderIdList','x','y','time','nextStop'
+#vdf:'vehicId','seatNum','seatRemains','orderIdList','stationIdList','x','y','time','nextStop'
 #vdf.index=vehicId
 #edf:'orderId','time','vehicId','eventType'
 #edf.index= (automatic)
@@ -25,16 +25,70 @@ def searchVeh(oid,odf,vdf):
     #search for the appropriate vehicle, return the id of the vehicle.
     return vdf.iloc[0,:]['vehicId']
 
-def addOrder(oid,vid,odf,vdf,edf):
+def getRoute(x,y,startTime,slist,sdf):
+    #start from (x,y), traverse all the stations in slist.
+    speed=10.0
+    permu=itertools.permutations(slist,len(slist))
+    minTime=99999999
+    for seq in permu:
+        dis=0
+        curx=x
+        cury=y
+        curTime=startTime
+        tmp=[]
+        for s in seq:
+            nextx=sdf.loc[s,'x']
+            nexty=sdf.loc[s,'y']
+            dis=dis+abs(nextx-curx)+abs(nexty-cury)
+            curTime=curTime+dis/speed
+            tmp.append((curTime,s))
+            curx=nextx
+            cury=nexty
+        
+        if curTime<minTime:
+            result=list(tmp)
+            minTime=curTime
+    print "\t\t Optimal Route: ",
+    for i in result:
+        print i[1],
+    print
+    
+    return result
+        
+    
+
+def addOrder(oid,vid,odf,vdf,edf,sdf):
     #add order to vehicle.
+    print '\t\t adding order %d to vehicle %d.'%(oid,vid)
     odf.loc[oid,'vehicId']=vid
     vdf.loc[vid,'orderIdList'].append(oid)
+    vdf.loc[vid,'stationIdList'].append(int(odf.loc[oid,'os']))
+    vdf.loc[vid,'stationIdList'].append(int(odf.loc[oid,'ds']))
     
-    #add a get on event.
+    #update the number of available seats
+    vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']-1
+    print '\t\t no. of available seats remains is:  %d.'%(vdf.loc[vid,'seatRemains'])
+    
     #replan the route.
+    slist=vdf.loc[vid,'stationIdList']
+    print '\t\t the order list for this vehicle is now: ', vdf.loc[vid,'orderIdList']
+    print '\t\t the station list for this vehicle is now: ', slist
+    route=getRoute(vdf.loc[vid,'x'], vdf.loc[vid,'y'],vdf.loc[vid,'time'], slist, sdf)
+    '''
+    route format: [(time1, location1), (time2, location2), ...]
+    '''
+
+    #add a get on event.
+    
     #add the get off events for this order.
     #modify the get on and get off events for other orders in this vehicle.
     pass
+
+def getOn(oid,vid,odf,vdf,edf):
+    #delete the station from stationIdList
+    
+    pass
+    
 
 def getOrdById(self, orderId):
     """
