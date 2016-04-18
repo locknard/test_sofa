@@ -9,10 +9,23 @@ from entities import Order, Vehicle
 from tools import mapTool as mt
 import pickle as pk
 import pandas as pd
+import datetime
+import sys
+import random as rd
+
+print 
+print "Program started at",datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    
 START_TIME = 0
 END_TIME = 86400
 NOT_DEFINED = None
 NUM_OF_VEHICLES=20
+down=40.06676
+up=40.09070
+left=116.30787
+right=116.37215
+
 
 ## initialization ##
 orderDf = NOT_DEFINED
@@ -27,6 +40,8 @@ tmp['d_lat']=tmp[3]
 tmp['d_lng']=tmp[4]
 tmp['orderTime']=tmp['time']
 
+tmp=tmp[(tmp['o_lng']<right ) & ( tmp['o_lng']>left ) & ( tmp['o_lat']<up ) & ( tmp['o_lat']>down ) & (tmp['d_lng']<right ) & ( tmp['d_lng']>left ) & ( tmp['d_lat']<up ) & ( tmp['d_lat']>down)]
+
 orderDf=tmp[['orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId']]
 orderDf.index=tmp['orderId']
 
@@ -39,7 +54,8 @@ orderDf['getOnTime'] = orderDf['getOffTime'] = orderDf['vehicId'] = -1
 @todo: eta function
 '''  
 orderDf['ETA']=[-1]*len(orderDf)
-print orderDf.head()
+print "%d orders loaded."%(len(orderDf))
+print orderDf
 
 vehicDf = NOT_DEFINED
 vehicDf=pd.DataFrame(columns=[['vehicId','seatNum']])
@@ -53,25 +69,32 @@ vehicDf['seatNum']=5
 # {'lat': -1, 'lng': -1, 'time': -1}.
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
-vehicDf['latestLoct'] = vehicDf['nextStop'] = [{'lat': -1.0, 'lng': -1.0, 
-                            'time': -1} for _ in range(len(vehicDf))]
-print vehicDf.head()
+vehicDf['latestLoct'] = vehicDf['nextStop'] = [{'lat': rd.uniform(down,up), 'lng': rd.uniform(left,right), 
+                            'time': 0} for _ in range(len(vehicDf))]
+print "%d vechicles created."%(len(vehicDf))
+print vehicDf
 
 eventDf = orderDf.loc[:,['orderId', 'orderTime']]
 eventDf.columns = 'orderId', 'time'
 eventDf['vehicId'] = -1
 eventDf['eventType'] = 'order'
-print eventDf.head()
+print "%d events added to the eventlist."%(len(eventDf))
 
 # eventDf
 # columns: time, orderId, vehicId, eventType
 lostOrder = 0
 
 ## simulation ##
+print
+print "Simulation started."
+
+sys.stdout.flush()
 while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
+    
+    print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
     
     ### Event of placing an order ###
     if (nextEvent['eventType'] == 'order'):
@@ -107,3 +130,4 @@ while len(eventDf) != 0:
         vehicle.getCustOff(order, orderDf, vehicDf, eventDf)
         del order
         del vehicle
+    sys.stdout.flush()
