@@ -26,7 +26,7 @@ eventDf = NOT_DEFINED
 START_TIME = 0
 END_TIME = 86400
 
-NUM_OF_VEHICLES=20
+NUM_OF_VEHICLES=3
 down=40.06676
 up=40.09070
 left=116.30787
@@ -47,8 +47,18 @@ tmp['orderTime']=tmp['time']
 
 tmp=tmp[(tmp['o_lng']<right ) & ( tmp['o_lng']>left ) & ( tmp['o_lat']<up ) & ( tmp['o_lat']>down ) & (tmp['d_lng']<right ) & ( tmp['d_lng']>left ) & ( tmp['d_lat']<up ) & ( tmp['d_lat']>down)]
 
+
 orderDf=tmp[['orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId']]
-orderDf.index=tmp['orderId']
+
+tmp=mt.convert_to_meter(orderDf[['o_lat','o_lng']], 40.0)
+
+orderDf['ox']=tmp.iloc[:,0]
+orderDf['oy']=tmp.iloc[:,1]
+
+tmp=mt.convert_to_meter(orderDf[['d_lat','d_lng']], 40.0)
+
+orderDf['dx']=tmp.iloc[:,0]
+orderDf['dy']=tmp.iloc[:,1]
 
 # columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
 # getOnTime, getOffTime, vehicId.
@@ -90,7 +100,13 @@ eventDf['eventType'] = 'order'
 
 print "%d events added to the eventlist."%(len(eventDf))
 
+stationDf=pd.read_csv(open("stations","r"),sep='\t',header=0)
+tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
 
+stationDf['x']=tmp.iloc[:,0]
+stationDf['y']=tmp.iloc[:,1]
+
+print "%d stations loaded."%(len(stationDf))
 
 lostOrder = 0
 
@@ -105,6 +121,7 @@ while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
+    updateVehiclePos(nextEvent['time'], vehicDf)
     
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
     

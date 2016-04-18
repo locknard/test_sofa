@@ -7,11 +7,33 @@ Created on 20160418
 
 from tools import mapTool as mt
 
+#odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy'
+#odf.index=orderId
+#vdf:'vehicId','seatNum','orderIdList','latestLoct','nextStop'
+#vdf.index=vehicId
+#edf:'orderId','time','vehicId','eventType'
+#edf.index= (automatic)
+#sdf:'stationId','lng','lat','x','y'
+#sdf.index= (automatic)
+
+
+def updateVehiclePos(time,vdf):
+    #based on the event time, update the positions of vehicles.
+    pass
 
 def searchVeh(oid,odf,vdf):
+    #search for the appropriate vehicle, return the id of the vehicle.
     return vdf.iloc[0,:]['vehicId']
 
 def addOrder(oid,vid,odf,vdf,edf):
+    #add order to vehicle.
+    odf.loc[oid,'vehicId']=vid
+    vdf.loc[vid,'orderIdList'].append(oid)
+    print vdf
+    #add a get on event.
+    #replan the route.
+    #add the get off events for this order.
+    #modify the get on and get off events for other orders in this vehicle.
     pass
 
 def getOrdById(self, orderId):
