@@ -107,9 +107,15 @@ vehicDf['seatNum']=5
 vehicDf['seatRemains']=5
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
-vehicDf['stationIdList'] = [[] for _ in range(len(vehicDf))]
-vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
-vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
+vehicDf['onStationIdList'] = [[] for _ in range(len(vehicDf))]
+vehicDf['offStationIdList'] = [[] for _ in range(len(vehicDf))]
+vehicDf['pairStationIdList'] = [[] for _ in range(len(vehicDf))]
+#===============================================================================
+# vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
+# vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
+#===============================================================================
+vehicDf['x']=[(left+right)/2.0 for _ in range(len(vehicDf))]
+vehicDf['y']=[(down+up)/2.0 for _ in range(len(vehicDf))]
 vehicDf['time']=0
 vehicDf['nextStop'] =0
 print "%d vechicles created."%(len(vehicDf))
@@ -174,14 +180,14 @@ while len(eventDf) != 0:
     if (nextEvent['eventType'] == 'getOn'):
         eventId = nextEvent['eventId']
         vehicId=nextEvent['vehicId']
-        vehicDf=getOff(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
+        vehicDf=getOn(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
         
         
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
         eventId = nextEvent['eventId']
         vehicId=nextEvent['vehicId']
-        vehicDf=getOn(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
+        vehicDf=getOff(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
         
     eventDf=eventDf.drop(evInx)
     print "\t\t event %d completed."%(evInx)

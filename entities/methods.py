@@ -8,15 +8,21 @@ Created on 20160418
 from tools import mapTool as mt
 import itertools
 import pandas as pd
-#odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy','os','ds'
-#odf.index=orderId
-#vdf:'vehicId','seatNum','seatRemains','orderIdList','stationIdList','x','y','time','nextStop'
-#vdf.index=vehicId
-#edf:'eventId','time','vehicId','eventType'
-#edf.index= eventId (eventId ends with 0 stands for order event, 1 stands for getOn event, and 2 for getOff event)
-#sdf:'stationId','lng','lat','x','y'
-#sdf.index= (automatic)
-
+'''
+odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy','os','ds'
+odf.index=orderId
+vdf:'vehicId','seatNum','seatRemains','orderIdList','onStationIdList','offStationIdList','pairStationIdList','x','y','time','nextStop'
+vdf.index=vehicId
+edf:'eventId','time','vehicId','eventType'
+edf.index= eventId (eventId ends with 
+    0: order event
+    1: getOn event
+    2: getOff event
+    3: passengerWait event
+    4: vehicleWait event
+sdf:'stationId','lng','lat','x','y'
+sdf.index= (automatic)
+'''
 
 def updateVehiclePos(time,vdf):
     #based on the event time, update the positions of vehicles.
@@ -26,11 +32,13 @@ def searchVeh(oid,odf,vdf):
     #search for the appropriate vehicle, return the id of the vehicle.
     return vdf.iloc[0,:]['vehicId']
 
-def getRoute(x,y,startTime,slist,sdf):
+def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
     #start from (x,y), traverse all the stations in slist.
     #Algorithm: test all the permutations. This method works even if two passengers get on/off at the same station
     speed=10.0
-    permu=itertools.permutations(slist,len(slist))
+    allList=onlist+offlist
+    allList=list(set(allList))
+    permu=itertools.permutations(allList,len(allList))
     minTime=99999999
     for seq in permu:
         dis=0
@@ -40,14 +48,17 @@ def getRoute(x,y,startTime,slist,sdf):
         tmp=[]
         
         #test if this permutation satisfies that a customer will get on before get off.
-        '''
-        @todo: 
-        '''
-        for s in seq:
-            if False:
-                break
+        legal=True
+        for pair in pairlist:
+            os=pair[0]
+            ds=pair[1]
+            if seq.index(os)>seq.index(ds):
+                legal=False
         
+        if not legal:
+            break
         
+        #calc the cost for this sequence
         for s in seq:
             nextx=sdf.loc[s,'x']
             nexty=sdf.loc[s,'y']
@@ -57,6 +68,7 @@ def getRoute(x,y,startTime,slist,sdf):
             curx=nextx
             cury=nexty
         
+        #find the sequence with least cost.
         if curTime<minTime:
             result=list(tmp)
             minTime=curTime
@@ -80,18 +92,23 @@ def addOrder(eid,vid,odf,vdf,edf,sdf):
     print '\t\t adding order %d to vehicle %d.'%(oid,vid)
     odf.loc[oid,'vehicId']=vid
     vdf.loc[vid,'orderIdList'].append(oid)
-    vdf.loc[vid,'stationIdList'].append(getOnStation)
-    vdf.loc[vid,'stationIdList'].append(getOffStation)
+    vdf.loc[vid,'onStationIdList'].append(getOnStation)
+    vdf.loc[vid,'offStationIdList'].append(getOffStation)
+    #use the pair station list to make sure that a get on event happens before the get off event.
+    vdf.loc[vid,'pairStationIdList'].append((getOnStation,getOffStation))
     
     #update the number of available seats
     vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']-1
     print '\t\t no. of available seats remains is:  %d.'%(vdf.loc[vid,'seatRemains'])
     
     #replan the route.
-    slist=vdf.loc[vid,'stationIdList']
+    onlist=vdf.loc[vid,'onStationIdList']
+    offlist=vdf.loc[vid,'offStationIdList']
+    pairList=vdf.loc[vid,'pairStationIdList']
     print '\t\t the order list for this vehicle is now: ', vdf.loc[vid,'orderIdList']
-    print '\t\t the station list for this vehicle is now: ', slist
-    route=getRoute(vdf.loc[vid,'x'], vdf.loc[vid,'y'],currentTime, slist, sdf)
+    print '\t\t the get on station list for this vehicle is now: ', onlist
+    print '\t\t the get off station list for this vehicle is now: ', offlist
+    route=getRoute(vdf.loc[vid,'x'], vdf.loc[vid,'y'],currentTime, onlist,offlist,pairList, sdf)
     '''
     route format: [(time1, location1), (time2, location2), ...]
     '''
@@ -135,7 +152,11 @@ def getOn(eid,vid,odf,vdf,edf,sdf):
     #if two or more passenger get on/off at the same station, just delete one station from the stationIdList
     oid=int(eid/10)
     getOnStation=int(odf.loc[oid,'os'])
-    vdf.loc[vid,'stationIdList'].remove(getOnStation)
+    getOffStation=int(odf.loc[oid,'ds'])
+    vdf.loc[vid,'onStationIdList'].remove(getOnStation)
+    
+    #remove the pair since the passenger is already onboard.
+    vdf.loc[vid,'pairStationIdList'].remove((getOnStation,getOffStation))
     return vdf
 
 def getOff(eid,vid,odf,vdf,edf,sdf):
@@ -143,7 +164,7 @@ def getOff(eid,vid,odf,vdf,edf,sdf):
     #one more available seat
     oid=int(eid/10)
     getOffStation=int(odf.loc[oid,'ds'])
-    vdf.loc[vid,'stationIdList'].remove(getOffStation)
+    vdf.loc[vid,'offStationIdList'].remove(getOffStation)
     vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']+1
     return vdf
     
