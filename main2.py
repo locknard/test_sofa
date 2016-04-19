@@ -110,6 +110,7 @@ vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['onStationIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['offStationIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['pairStationIdList'] = [[] for _ in range(len(vehicDf))]
+vehicDf['route'] = [[] for _ in range(len(vehicDf))]
 #===============================================================================
 # vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
 # vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
@@ -117,7 +118,7 @@ vehicDf['pairStationIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['x']=[(left+right)/2.0 for _ in range(len(vehicDf))]
 vehicDf['y']=[(down+up)/2.0 for _ in range(len(vehicDf))]
 vehicDf['time']=0
-vehicDf['nextStop'] =0
+vehicDf['nextStop'] =-1
 print "%d vechicles created."%(len(vehicDf))
 #print vehicDf
 

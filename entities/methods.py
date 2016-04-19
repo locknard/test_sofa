@@ -112,6 +112,8 @@ def addOrder(eid,vid,odf,vdf,edf,sdf):
     '''
     route format: [(time1, location1), (time2, location2), ...]
     '''
+    vdf.set_value(vid,'route',route)
+    
     #add this vechicle Id the the order event
     edf.loc[oid*10,'vehicId']=vid
     #add a get on event.
@@ -143,8 +145,8 @@ def addOrder(eid,vid,odf,vdf,edf,sdf):
                 print '\t\t getOn event time corresponding to order %d have changed from %.1f to %.1f.'%(order,edf.loc[order*10+1,'time'],i[0])
                 edf.loc[order*10+1,'time']=i[0]
                 
-    
-    
+    #update next stop
+    vdf.loc[vid,'nextStop']=route[0][1]
     return (odf,vdf,edf)
 
 def getOn(eid,vid,odf,vdf,edf,sdf):
@@ -157,6 +159,12 @@ def getOn(eid,vid,odf,vdf,edf,sdf):
     
     #remove the pair since the passenger is already onboard.
     vdf.loc[vid,'pairStationIdList'].remove((getOnStation,getOffStation))
+    
+    #remove the station from the route
+    del vdf.loc[vid,'route'][0]
+    
+    #set the next station
+    vdf.loc[vid,'nextStop']=vdf.loc[vid,'route'][0][1]
     return vdf
 
 def getOff(eid,vid,odf,vdf,edf,sdf):
@@ -166,6 +174,14 @@ def getOff(eid,vid,odf,vdf,edf,sdf):
     getOffStation=int(odf.loc[oid,'ds'])
     vdf.loc[vid,'offStationIdList'].remove(getOffStation)
     vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']+1
+    #remove the station from the route
+    del vdf.loc[vid,'route'][0]
+    
+    #set the next station
+    if len(vdf.loc[vid,'route'])>0:
+        vdf.loc[vid,'nextStop']=vdf.loc[vid,'route'][0][1]
+    else:
+        vdf.loc[vid,'nextStop']=-1
     return vdf
     
 
