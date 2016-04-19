@@ -130,11 +130,19 @@ print "%d events added to the eventlist."%(len(eventDf))
 
 
 
-
+def processPrint(edf,vdf):
+    print
+    print '-----------------------eventDF-----------------------'
+    print edf
+    print '-----------------------vehicleDF-----------------------'
+    print vdf
+    print '-----------------------DF end-----------------------'
+    print
 
 ## simulation ##
 print
 print "Simulation started."
+processPrint(eventDf, vehicDf)
 sys.stdout.flush()
 
 lostOrder = 0
@@ -146,12 +154,6 @@ while len(eventDf) != 0:
     vehicDf=updateVehiclePos(nextEvent['time'], vehicDf)
 
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
-    
-    print '-----------------------eventDF-----------------------'
-    print eventDf
-    print '-----------------------vehicleDF-----------------------'
-    print vehicDf
-    print '-----------------------DF end-----------------------'
     
     ### Event of placing an order ###
     if (nextEvent['eventType'] == 'order'):
@@ -172,17 +174,16 @@ while len(eventDf) != 0:
     if (nextEvent['eventType'] == 'getOn'):
         eventId = nextEvent['eventId']
         vehicId=nextEvent['vehicId']
-        vehicDf=getOn(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
+        vehicDf=getOff(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
+        
         
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
-        vehicId = nextEvent['vehicId']
-        vehicle = Vehicle.Vehicle(vehicId, vehicDf)
-        orderId = nextEvent['orderId']
-        order = Order.Order(orderId, orderDf)
-        vehicle.getCustOff(order, orderDf, vehicDf, eventDf)
-        del order
-        del vehicle
+        eventId = nextEvent['eventId']
+        vehicId=nextEvent['vehicId']
+        vehicDf=getOn(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
         
     eventDf=eventDf.drop(evInx)
+    print "\t\t event %d completed."%(evInx)
+    processPrint(eventDf, vehicDf)
     sys.stdout.flush()

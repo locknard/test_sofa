@@ -137,6 +137,15 @@ def getOn(eid,vid,odf,vdf,edf,sdf):
     getOnStation=int(odf.loc[oid,'os'])
     vdf.loc[vid,'stationIdList'].remove(getOnStation)
     return vdf
+
+def getOff(eid,vid,odf,vdf,edf,sdf):
+    #delete the getOff station from stationIdList
+    #one more available seat
+    oid=int(eid/10)
+    getOffStation=int(odf.loc[oid,'ds'])
+    vdf.loc[vid,'stationIdList'].remove(getOffStation)
+    vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']+1
+    return vdf
     
 
 def getOrdById(self, orderId):
