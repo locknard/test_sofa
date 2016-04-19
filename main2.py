@@ -85,8 +85,14 @@ dis=distance.cdist(orderDf[['dx','dy']], stationDf[['x','y']], 'cityblock')
 minIndex=np.argmin(dis,1)
 orderDf['ds']= minIndex+1
 orderDf[['os','ds']]=orderDf[['os','ds']].astype(int)
+#orderDf['os']=orderDf['os'].apply(int)
+#orderDf['ds']=orderDf['ds'].apply(int)
 orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
 
+'''
+code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
+'''
+orderDf.loc[8253,'orderTime']=1627
 print "%d orders loaded."%(len(orderDf))
 
 
@@ -114,7 +120,9 @@ print "%d vechicles created."%(len(vehicDf))
 # columns: time, orderId, vehicId, eventType
 
 eventDf = orderDf.loc[:,['orderId', 'orderTime']]
-eventDf.columns = 'orderId', 'time'
+eventDf.columns = 'eventId', 'time'
+eventDf['eventId']=eventDf['eventId']*10
+eventDf.index=eventDf['eventId']
 eventDf['vehicId'] = -1
 eventDf['eventType'] = 'order'
 
@@ -134,16 +142,16 @@ while len(eventDf) != 0:
     # the index of next event
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
-    updateVehiclePos(nextEvent['time'], vehicDf)
+    vehicDf=updateVehiclePos(nextEvent['time'], vehicDf)
     
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
     
     ### Event of placing an order ###
     if (nextEvent['eventType'] == 'order'):
-        orderId = nextEvent['orderId']
+        eventId = nextEvent['eventId']
         # crtOrderDf (current order df) is a dataframe
         # crtOrderDf = orderDf[(orderDf.index == orderId)]
-        vehicleId = searchVeh(orderId,orderDf,vehicDf)
+        vehicleId = searchVeh(eventId,orderDf,vehicDf)
         
         if (vehicleId == None):
             lostOrder += 1
@@ -151,7 +159,7 @@ while len(eventDf) != 0:
         else:
             # The vehicle decide to take the new order.
             print "\t\t vehicle with id %d is chosen."%(vehicleId)
-            addOrder(orderId, vehicleId,orderDf,vehicDf,eventDf,stationDf)
+            (orderDf,vehicDf,eventDf)=addOrder(eventId, vehicleId,orderDf,vehicDf,eventDf,stationDf)
 
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOn'):

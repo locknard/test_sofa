@@ -7,19 +7,20 @@ Created on 20160418
 
 from tools import mapTool as mt
 import itertools
+import pandas as pd
 #odf:'orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId','ox','oy','dx','dy','os','ds'
 #odf.index=orderId
 #vdf:'vehicId','seatNum','seatRemains','orderIdList','stationIdList','x','y','time','nextStop'
 #vdf.index=vehicId
-#edf:'orderId','time','vehicId','eventType'
-#edf.index= (automatic)
+#edf:'eventId','time','vehicId','eventType'
+#edf.index= eventId (eventId ends with 0 stands for order event, 1 stands for getOn event, and 2 for getOff event)
 #sdf:'stationId','lng','lat','x','y'
 #sdf.index= (automatic)
 
 
 def updateVehiclePos(time,vdf):
     #based on the event time, update the positions of vehicles.
-    pass
+    return vdf
 
 def searchVeh(oid,odf,vdf):
     #search for the appropriate vehicle, return the id of the vehicle.
@@ -48,7 +49,7 @@ def getRoute(x,y,startTime,slist,sdf):
         if curTime<minTime:
             result=list(tmp)
             minTime=curTime
-    print "\t\t Optimal Route: ",
+    print "\t\t optimal Route: ",
     for i in result:
         print i[1],
     print
@@ -57,13 +58,19 @@ def getRoute(x,y,startTime,slist,sdf):
         
     
 
-def addOrder(oid,vid,odf,vdf,edf,sdf):
+def addOrder(eid,vid,odf,vdf,edf,sdf):
     #add order to vehicle.
+    oid=int(eid/10)
+    getOnStation=int(odf.loc[oid,'os'])
+    getOffStation=int(odf.loc[oid,'ds'])
+    orderBeforeThisAddition=list(vdf.loc[vid,'orderIdList'])
+    currentTime=edf.loc[eid,'time']
+    
     print '\t\t adding order %d to vehicle %d.'%(oid,vid)
     odf.loc[oid,'vehicId']=vid
     vdf.loc[vid,'orderIdList'].append(oid)
-    vdf.loc[vid,'stationIdList'].append(int(odf.loc[oid,'os']))
-    vdf.loc[vid,'stationIdList'].append(int(odf.loc[oid,'ds']))
+    vdf.loc[vid,'stationIdList'].append(getOnStation)
+    vdf.loc[vid,'stationIdList'].append(getOffStation)
     
     #update the number of available seats
     vdf.loc[vid,'seatRemains']=vdf.loc[vid,'seatRemains']-1
@@ -73,16 +80,44 @@ def addOrder(oid,vid,odf,vdf,edf,sdf):
     slist=vdf.loc[vid,'stationIdList']
     print '\t\t the order list for this vehicle is now: ', vdf.loc[vid,'orderIdList']
     print '\t\t the station list for this vehicle is now: ', slist
-    route=getRoute(vdf.loc[vid,'x'], vdf.loc[vid,'y'],vdf.loc[vid,'time'], slist, sdf)
+    route=getRoute(vdf.loc[vid,'x'], vdf.loc[vid,'y'],currentTime, slist, sdf)
     '''
     route format: [(time1, location1), (time2, location2), ...]
     '''
-
+    #add this vechicle Id the the order event
+    edf.loc[oid*10,'vehicId']=vid
     #add a get on event.
+    getOnTime=0
+    for i in route:
+        if i[1]==getOnStation:
+            getOnTime=i[0]
+            break;
+    print '\t\t order %d will get on from station %d at %.1f.'%(oid,getOnStation,getOnTime)
+    edf=edf.append(pd.DataFrame([[oid*10+1,getOnTime,vid,'getOn']],index=[oid*10+1],columns=['eventId','time','vehicId','eventType']))
     
     #add the get off events for this order.
+    getOffTime=0
+    for i in route:
+        if i[1]==getOffStation:
+            getOffTime=i[0]
+            break;
+    print '\t\t order %d will get off from station %d at %.1f.'%(oid,getOffStation,getOffTime)
+    edf=edf.append(pd.DataFrame([[oid*10+2,getOffTime,vid,'getOff']],index=[oid*10+2],columns=['eventId','time','vehicId','eventType']))
+    print edf
+    
     #modify the get on and get off events for other orders in this vehicle.
-    pass
+    
+    for order in orderBeforeThisAddition:
+        thisGetOnStation=int(odf.loc[order,'os'])
+        thisGetOffStation=int(odf.loc[order,'ds'])
+        for i in route:
+            if i[1]==thisGetOnStation:
+                print '\t\t getOn event time corresponding to order %d have changed from %.1f to %.1f.'%(order,edf.loc[order*10+1,'time'],i[0])
+                edf.loc[order*10+1,'time']=i[0]
+                
+    
+    
+    return (odf,vdf,edf)
 
 def getOn(oid,vid,odf,vdf,edf):
     #delete the station from stationIdList
