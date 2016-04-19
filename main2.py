@@ -29,10 +29,10 @@ START_TIME = 0
 END_TIME = 86400
 
 NUM_OF_VEHICLES=3
-down=40.06676
-up=40.09070
-left=116.30787
-right=116.37215
+_down=40.06676
+_up=40.09070
+_left=116.30787
+_right=116.37215
 
 ## initialization ##
 stationDf=pd.read_csv(open("stations","r"),sep='\t',header=0)
@@ -40,6 +40,14 @@ tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
 
 stationDf['x']=tmp.iloc[:,0]
 stationDf['y']=tmp.iloc[:,1]
+left=np.min(stationDf['x'])
+right=np.max(stationDf['x'])
+down=np.min(stationDf['y'])
+up=np.max(stationDf['y'])
+
+stationDf['x']=stationDf['x']-left
+stationDf['y']=stationDf['y']-down
+
 
 stationDf['stationId']=stationDf['stationId'].astype(int)
 stationDf.index=stationDf['stationId']
@@ -57,7 +65,7 @@ tmp['d_lat']=tmp[3]
 tmp['d_lng']=tmp[4]
 tmp['orderTime']=tmp['time']
 
-tmp=tmp[(tmp['o_lng']<right ) & ( tmp['o_lng']>left ) & ( tmp['o_lat']<up ) & ( tmp['o_lat']>down ) & (tmp['d_lng']<right ) & ( tmp['d_lng']>left ) & ( tmp['d_lat']<up ) & ( tmp['d_lat']>down)]
+tmp=tmp[(tmp['o_lng']<_right ) & ( tmp['o_lng']>_left ) & ( tmp['o_lat']<_up ) & ( tmp['o_lat']>_down ) & (tmp['d_lng']<_right ) & ( tmp['d_lng']>_left ) & ( tmp['d_lat']<_up ) & ( tmp['d_lat']>_down)]
 
 
 orderDf=tmp[['orderId','o_lat', 'o_lng', 'd_lat','d_lng','orderTime','getOnTime','getOffTime','vehicId']]
@@ -71,6 +79,11 @@ tmp=mt.convert_to_meter(orderDf[['d_lat','d_lng']], 40.0)
 
 orderDf['dx']=tmp.iloc[:,0]
 orderDf['dy']=tmp.iloc[:,1]
+
+orderDf['ox']=orderDf['ox']-left
+orderDf['dx']=orderDf['dx']-left
+orderDf['oy']=orderDf['oy']-down
+orderDf['dy']=orderDf['dy']-down
 
 # columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
 # getOnTime, getOffTime, vehicId.
@@ -96,10 +109,7 @@ orderDf.loc[8253,'orderTime']=1627
 print "%d orders loaded."%(len(orderDf))
 
 
-left=min([np.min(orderDf['ox']),np.min(orderDf['dx'])])
-right=max([np.max(orderDf['ox']),np.max(orderDf['dx'])])
-down=min([np.min(orderDf['oy']),np.min(orderDf['dy'])])
-up=max([np.max(orderDf['oy']),np.max(orderDf['dy'])])
+
 
 vehicDf=pd.DataFrame(columns=[['vehicId','seatNum']])
 vehicDf['vehicId']=range(NUM_OF_VEHICLES)
@@ -115,6 +125,10 @@ vehicDf['route'] = [[] for _ in range(len(vehicDf))]
 # vehicDf['x']=[rd.uniform(left,right) for _ in range(len(vehicDf))]
 # vehicDf['y']=[rd.uniform(down,up) for _ in range(len(vehicDf))]
 #===============================================================================
+left=np.min(stationDf['x'])
+right=np.max(stationDf['x'])
+down=np.min(stationDf['y'])
+up=np.max(stationDf['y'])
 vehicDf['x']=[(left+right)/2.0 for _ in range(len(vehicDf))]
 vehicDf['y']=[(down+up)/2.0 for _ in range(len(vehicDf))]
 vehicDf['time']=0

@@ -26,6 +26,7 @@ sdf.index= (automatic)
 
 def updateVehiclePos(time,vdf):
     #based on the event time, update the positions of vehicles.
+    
     return vdf
 
 def searchVeh(oid,odf,vdf):
