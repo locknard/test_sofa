@@ -28,6 +28,7 @@ def searchVeh(oid,odf,vdf):
 
 def getRoute(x,y,startTime,slist,sdf):
     #start from (x,y), traverse all the stations in slist.
+    #Algorithm: test all the permutations. This method works even if two passengers get on/off at the same station
     speed=10.0
     permu=itertools.permutations(slist,len(slist))
     minTime=99999999
@@ -37,6 +38,16 @@ def getRoute(x,y,startTime,slist,sdf):
         cury=y
         curTime=startTime
         tmp=[]
+        
+        #test if this permutation satisfies that a customer will get on before get off.
+        '''
+        @todo: 
+        '''
+        for s in seq:
+            if False:
+                break
+        
+        
         for s in seq:
             nextx=sdf.loc[s,'x']
             nexty=sdf.loc[s,'y']
@@ -103,7 +114,7 @@ def addOrder(eid,vid,odf,vdf,edf,sdf):
             break;
     print '\t\t order %d will get off from station %d at %.1f.'%(oid,getOffStation,getOffTime)
     edf=edf.append(pd.DataFrame([[oid*10+2,getOffTime,vid,'getOff']],index=[oid*10+2],columns=['eventId','time','vehicId','eventType']))
-    print edf
+
     
     #modify the get on and get off events for other orders in this vehicle.
     
@@ -119,10 +130,13 @@ def addOrder(eid,vid,odf,vdf,edf,sdf):
     
     return (odf,vdf,edf)
 
-def getOn(oid,vid,odf,vdf,edf):
-    #delete the station from stationIdList
-    
-    pass
+def getOn(eid,vid,odf,vdf,edf,sdf):
+    #delete the getOn station from stationIdList
+    #if two or more passenger get on/off at the same station, just delete one station from the stationIdList
+    oid=int(eid/10)
+    getOnStation=int(odf.loc[oid,'os'])
+    vdf.loc[vid,'stationIdList'].remove(getOnStation)
+    return vdf
     
 
 def getOrdById(self, orderId):

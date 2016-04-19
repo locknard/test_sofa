@@ -140,11 +140,18 @@ sys.stdout.flush()
 lostOrder = 0
 while len(eventDf) != 0:
     # the index of next event
+    
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
     vehicDf=updateVehiclePos(nextEvent['time'], vehicDf)
-    
+
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
+    
+    print '-----------------------eventDF-----------------------'
+    print eventDf
+    print '-----------------------vehicleDF-----------------------'
+    print vehicDf
+    print '-----------------------DF end-----------------------'
     
     ### Event of placing an order ###
     if (nextEvent['eventType'] == 'order'):
@@ -163,13 +170,9 @@ while len(eventDf) != 0:
 
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOn'):
-        vehicId = nextEvent['vehicId']
-        vehicle = Vehicle.Vehicle(vehicId, vehicDf)
-        orderId = nextEvent['orderId']
-        order = Order.Order(orderId, orderDf)
-        vehicle.getCustOn(order, orderDf, vehicDf, eventDf)
-        del order
-        del vehicle
+        eventId = nextEvent['eventId']
+        vehicId=nextEvent['vehicId']
+        vehicDf=getOn(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
         
     ### Event of getting on the vehicle ###
     if (nextEvent['eventType'] == 'getOff'):
