@@ -18,20 +18,59 @@ edf.index= eventId (eventId ends with
     0: order event
     1: getOn event
     2: getOff event
-    3: passengerWait event
-    4: vehicleWait event
+    3: passengerWait event (will always happen, and wait time can be derived from orderDf)
+    4: vehicleWait event (will never happen under current setting)
 sdf:'stationId','lng','lat','x','y'
 sdf.index= (automatic)
 '''
 
-def updateVehiclePos(time,vdf):
+def updateVehiclePos(time,vdf,sdf):
     #based on the event time, update the positions of vehicles.
+    speed=10.0
     
-    return vdf
+    #vehicle that doesn't have next stop will stay still and wait.
+    stillVeh=vdf[vdf['nextStop']<1]
+    stillVeh.loc[:,'time']=time
+    
+    #vechicle that have next stop will move.
+    movingVeh=vdf[vdf['nextStop']>0]
+    xonly=pd.DataFrame(columns=movingVeh.columns)
+    xyboth=pd.DataFrame(columns=movingVeh.columns)
+    if len(movingVeh)>0:
+        timeSpan=time-movingVeh['time']
+        curx=movingVeh['x']
+        cury=movingVeh['y']
+        nextx=sdf.loc[movingVeh['nextStop'],'x']
+        nextx.index=movingVeh.index
+        nexty=sdf.loc[movingVeh['nextStop'],'y']
+        nexty.index=movingVeh.index
+        dis=speed*timeSpan
+        xmove=curx-nextx
+        ymove=cury-nexty
+        
+        xabs=xmove.apply(abs)
+        
+        #first move horizontally
+        xonly=movingVeh.loc[xabs>dis,:]
+
+        if len(xonly)>0:
+            xonly.loc[xmove>0,'x']=xonly.loc[xmove>0,'x']-dis[xabs>dis]
+            xonly.loc[xmove<=0,'x']=xonly.loc[xmove<=0,'x']+dis[xabs>dis]
+            xonly.loc[:,'time']=time
+        #then move vertically
+        xyboth=movingVeh.loc[xabs<=dis,:]
+
+        if len(xyboth)>0:
+            xyboth.loc[:,'x']=nextx[xabs<=dis]
+            xyboth.loc[(xabs<=dis) & (ymove>0),'y']=xyboth.loc[(xabs<=dis) & (ymove>0),'y']-(dis-xabs)[(xabs<=dis) & (ymove>0)]
+            xyboth.loc[(xabs<=dis) & (ymove<=0),'y']=xyboth.loc[(xabs<=dis) & (ymove<=0),'y']+(dis-xabs)[(xabs<=dis) & (ymove<=0)]
+            xyboth.loc[:,'time']=time
+        
+    return stillVeh.append(xonly).append(xyboth)
 
 def searchVeh(oid,odf,vdf):
     #search for the appropriate vehicle, return the id of the vehicle.
-    return vdf.iloc[0,:]['vehicId']
+    return int(vdf.iloc[0,:]['vehicId'])
 
 def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
     #start from (x,y), traverse all the stations in slist.
@@ -63,7 +102,7 @@ def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
         for s in seq:
             nextx=sdf.loc[s,'x']
             nexty=sdf.loc[s,'y']
-            dis=dis+abs(nextx-curx)+abs(nexty-cury)
+            dis=abs(nextx-curx)+abs(nexty-cury)
             curTime=curTime+dis/speed
             tmp.append((curTime,s))
             curx=nextx
@@ -79,7 +118,8 @@ def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
     print
     
     return result
-        
+
+
     
 
 def addOrder(eid,vid,odf,vdf,edf,sdf):

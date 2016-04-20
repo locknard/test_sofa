@@ -52,7 +52,7 @@ stationDf['y']=stationDf['y']-down
 stationDf['stationId']=stationDf['stationId'].astype(int)
 stationDf.index=stationDf['stationId']
 print "%d stations loaded."%(len(stationDf))
-
+print stationDf.loc[[40,44,23,51],:]
 
 tmp=pk.load(open("sampleDemandPickle","rb"))
 tmp['getOnTime']=-1
@@ -102,6 +102,7 @@ orderDf[['os','ds']]=orderDf[['os','ds']].astype(int)
 #orderDf['ds']=orderDf['ds'].apply(int)
 orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
 
+startTime=np.min(orderDf['orderTime'])
 '''
 code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
 '''
@@ -131,7 +132,7 @@ down=np.min(stationDf['y'])
 up=np.max(stationDf['y'])
 vehicDf['x']=[(left+right)/2.0 for _ in range(len(vehicDf))]
 vehicDf['y']=[(down+up)/2.0 for _ in range(len(vehicDf))]
-vehicDf['time']=0
+vehicDf['time']=startTime
 vehicDf['nextStop'] =-1
 print "%d vechicles created."%(len(vehicDf))
 #print vehicDf
@@ -163,7 +164,7 @@ def processPrint(edf,vdf):
 ## simulation ##
 print
 print "Simulation started."
-processPrint(eventDf, vehicDf)
+#processPrint(eventDf, vehicDf)
 sys.stdout.flush()
 
 lostOrder = 0
@@ -172,7 +173,9 @@ while len(eventDf) != 0:
     
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
-    vehicDf=updateVehiclePos(nextEvent['time'], vehicDf)
+    vehicDf=updateVehiclePos(nextEvent['time'], vehicDf,stationDf)
+    
+    print '\t Vehicle position updated.'
 
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
     
@@ -206,5 +209,7 @@ while len(eventDf) != 0:
         
     eventDf=eventDf.drop(evInx)
     print "\t\t event %d completed."%(evInx)
-    processPrint(eventDf, vehicDf)
+    #processPrint(eventDf, vehicDf)
     sys.stdout.flush()
+
+print "Completed."
