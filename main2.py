@@ -54,7 +54,7 @@ def generatePNG(eid):
         ax.annotate(myTxt[i], xy=(vx[i],vy[i]),xytext=(vx[i]-60,vy[i]-120))
         
     #plot stations 
-    ax.scatter(stationDf.loc[:,'x'],stationDf.loc[:,'y'],s=20,marker='.',facecolor='b',alpha=0.3)
+    ax.scatter(stationDf.loc[:,'x'],stationDf.loc[:,'y'],s=60,marker='.',facecolor='b',alpha=0.3)
     
     #vehicle next stop
     movingVeh=vehicDf[vehicDf['nextStop']>0]
@@ -68,18 +68,28 @@ def generatePNG(eid):
     
     #waiting order
     orderEvent=eventDf.loc[eventDf['eventType']!='getOff']
-    print orderEvent
     waitingOrder=list((orderEvent['eventId']/10).apply(int))
     waitingx=orderDf.loc[waitingOrder,'ox']
     waitingy=orderDf.loc[waitingOrder,'oy']
+    sid=orderDf.loc[waitingOrder,'os']
+    sx=stationDf.loc[sid,'x']
+    sy=stationDf.loc[sid,'y']
     ax.scatter(waitingx,waitingy,marker='^',s=100,facecolor='r',linewidth=0)
+    for i in range(len(waitingx)):
+        ax.arrow(waitingx.iloc[i],waitingy.iloc[i],sx.iloc[i]-waitingx.iloc[i],sy.iloc[i]-waitingy.iloc[i],head_length=1,head_width=1)
     
     #order dest
     orderEvent=eventDf.loc[eventDf['eventType']=='getOff']
     waitingOrder=list((orderEvent['eventId']/10).apply(int))
     waitingx=orderDf.loc[waitingOrder,'dx']
     waitingy=orderDf.loc[waitingOrder,'dy']
+    sid=orderDf.loc[waitingOrder,'ds']
+    sx=stationDf.loc[sid,'x']
+    sy=stationDf.loc[sid,'y']
     ax.scatter(waitingx,waitingy,marker='v',s=100,facecolor='g',linewidth=0) 
+    for i in range(len(waitingx)):
+        ax.arrow(waitingx.iloc[i],waitingy.iloc[i],sx.iloc[i]-waitingx.iloc[i],sy.iloc[i]-waitingy.iloc[i],head_length=1,head_width=1)
+    
     
     ax.set_title("time: %d, event type: %s"%(time,eventDf.loc[eid,'eventType']))
     fig.savefig("png/"+str(int(time))+"_"+str(eid)+".png",dpi=90,format='png')
@@ -122,7 +132,7 @@ stationDf['y']=stationDf['y']-down
 stationDf['stationId']=stationDf['stationId'].astype(int)
 stationDf.index=stationDf['stationId']
 print "%d stations loaded."%(len(stationDf))
-print stationDf.loc[[40,44,23,51],:]
+
 
 tmp=pk.load(open("sampleDemandPickle","rb"))
 tmp['getOnTime']=-1
@@ -230,7 +240,7 @@ print "%d events added to the eventlist."%(len(eventDf))
 ## simulation ##
 print
 print "Simulation started."
-processPrint(eventDf, vehicDf)
+#processPrint(eventDf, vehicDf)
 sys.stdout.flush()
 
 lostOrder = 0
