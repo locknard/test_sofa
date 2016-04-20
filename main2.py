@@ -16,6 +16,7 @@ import scipy.spatial.distance as distance
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import fillStyles
+from settings import *
 
 
 def processPrint(edf,vdf):
@@ -99,23 +100,23 @@ def generatePNG(eid):
 print 
 print "Program started at",datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+#use sys argv to overwrite default setting
+if len(sys.argv)>1:
+    STATION_FILE=sys.argv[1]
+    DEMAND_FILE=sys.argv[2]
+    NUM_OF_VEHICLES=sys.argv[3]
 
-NOT_DEFINED = None
 orderDf = NOT_DEFINED
 vehicDf = NOT_DEFINED
 eventDf = NOT_DEFINED
 
-START_TIME = 0
-END_TIME = 86400
-
-NUM_OF_VEHICLES=3
 _down=40.06676
 _up=40.09070
 _left=116.30787
 _right=116.37215
 
 ## initialization ##
-stationDf=pd.read_csv(open("stations","r"),sep='\t',header=0)
+stationDf=pd.read_csv(open(STATION_FILE,"r"),sep='\t',header=0)
 tmp=mt.convert_to_meter(stationDf[['lat','lng']], 40.0)
 
 stationDf['x']=tmp.iloc[:,0]
@@ -134,7 +135,7 @@ stationDf.index=stationDf['stationId']
 print "%d stations loaded."%(len(stationDf))
 
 
-tmp=pk.load(open("sampleDemandPickle","rb"))
+tmp=pk.load(open(DEMAND_FILE,"rb"))
 tmp['getOnTime']=-1
 tmp['getOffTime']=-1
 tmp['vehicId']=-1
@@ -201,8 +202,8 @@ print "%d orders loaded."%(len(orderDf))
 
 vehicDf=pd.DataFrame(columns=[['vehicId','seatNum']])
 vehicDf['vehicId']=range(NUM_OF_VEHICLES)
-vehicDf['seatNum']=5
-vehicDf['seatRemains']=5
+vehicDf['seatNum']=NUM_OF_SEAT
+vehicDf['seatRemains']=NUM_OF_SEAT
 vehicDf.index = vehicDf['vehicId']
 vehicDf['orderIdList'] = [[] for _ in range(len(vehicDf))]
 vehicDf['onStationIdList'] = [[] for _ in range(len(vehicDf))]
