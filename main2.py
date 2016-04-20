@@ -14,7 +14,87 @@ import sys
 import random as rd
 import scipy.spatial.distance as distance
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import fillStyles
 
+
+def processPrint(edf,vdf):
+    print
+    print '-----------------------eventDF-----------------------'
+    print edf
+    print '-----------------------vehicleDF-----------------------'
+    print vdf
+    print '-----------------------DF end-----------------------'
+    print
+    
+def generatePNG(eid):
+    global left,right,up,down
+    global orderDf,eventDf,stationDf,vehicDf
+    time=eventDf.loc[eid,'time']
+    fig=plt.figure(1,figsize=(15,10),frameon=False)
+    #plt.axis([left, right, down, up])
+    ax=fig.add_subplot(111,aspect=1)
+    ax.set_xticks([])
+    ax.set_yticks([]) 
+    ax.axis('off')
+    
+    #vehicle location
+    vx=vehicDf.loc[:,'x']
+    vy=vehicDf.loc[:,'y']
+    
+    
+    #vehicle id and vehicle seats remaining
+    vid=vehicDf.loc[:,'vehicId'].apply(int)
+    vseats=vehicDf.loc[:,'seatRemains'].apply(int)
+    myTxt=[str(vid[i])+":"+str(vseats[i]) for i in range(len(vid))]
+    
+    #plot vehicle location, id and seat remaining
+    ax.scatter(vx,vy,marker='s',s=200,facecolor='b',linewidth=0)
+    for i in range(len(vid)):
+        ax.annotate(myTxt[i], xy=(vx[i],vy[i]),xytext=(vx[i]-60,vy[i]-120))
+        
+    #plot stations 
+    ax.scatter(stationDf.loc[:,'x'],stationDf.loc[:,'y'],s=60,marker='.',facecolor='b',alpha=0.3)
+    
+    #vehicle next stop
+    movingVeh=vehicDf[vehicDf['nextStop']>0]
+    nextx=stationDf.loc[movingVeh['nextStop'],'x']
+    nextx.index=movingVeh.index
+    nexty=stationDf.loc[movingVeh['nextStop'],'y']
+    nexty.index=movingVeh.index
+    for i in nextx.index:
+        ax.arrow(vx[i],vy[i],nextx[i]-vx[i],0,head_length=1,head_width=1)
+        ax.arrow(nextx[i],vy[i],0,nexty[i]-vy[i],head_length=70,head_width=50)
+    
+    #waiting order
+    orderEvent=eventDf.loc[eventDf['eventType']!='getOff']
+    waitingOrder=list((orderEvent['eventId']/10).apply(int))
+    waitingx=orderDf.loc[waitingOrder,'ox']
+    waitingy=orderDf.loc[waitingOrder,'oy']
+    sid=orderDf.loc[waitingOrder,'os']
+    sx=stationDf.loc[sid,'x']
+    sy=stationDf.loc[sid,'y']
+    ax.scatter(waitingx,waitingy,marker='^',s=100,facecolor='r',linewidth=0)
+    for i in range(len(waitingx)):
+        ax.arrow(waitingx.iloc[i],waitingy.iloc[i],sx.iloc[i]-waitingx.iloc[i],sy.iloc[i]-waitingy.iloc[i],head_length=1,head_width=1)
+    
+    #order dest
+    orderEvent=eventDf.loc[eventDf['eventType']=='getOff']
+    waitingOrder=list((orderEvent['eventId']/10).apply(int))
+    waitingx=orderDf.loc[waitingOrder,'dx']
+    waitingy=orderDf.loc[waitingOrder,'dy']
+    sid=orderDf.loc[waitingOrder,'ds']
+    sx=stationDf.loc[sid,'x']
+    sy=stationDf.loc[sid,'y']
+    ax.scatter(waitingx,waitingy,marker='v',s=100,facecolor='g',linewidth=0) 
+    for i in range(len(waitingx)):
+        ax.arrow(waitingx.iloc[i],waitingy.iloc[i],sx.iloc[i]-waitingx.iloc[i],sy.iloc[i]-waitingy.iloc[i],head_length=1,head_width=1)
+    
+    
+    ax.set_title("time: %d, event type: %s"%(time,eventDf.loc[eid,'eventType']))
+    fig.savefig("png/"+str(int(time))+"_"+str(eid)+".png",dpi=90,format='png')
+    plt.close('all')
+    
 
 print 
 print "Program started at",datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -85,9 +165,20 @@ orderDf['dx']=orderDf['dx']-left
 orderDf['oy']=orderDf['oy']-down
 orderDf['dy']=orderDf['dy']-down
 
-# columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
-# getOnTime, getOffTime, vehicId.
 orderDf.index = orderDf['orderId']
+
+#********************************************************************************************************
+'''
+code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
+'''
+orderDf.loc[8253,'orderTime']=1627
+orderDf.loc[8253,'ox']=orderDf.loc[8253,'ox']+3100
+orderDf.loc[8253,'oy']=orderDf.loc[8253,'oy']+400
+orderDf.loc[8253,'dx']=orderDf.loc[8253,'dx']+4000
+orderDf.loc[8253,'dy']=orderDf.loc[8253,'dy']+1300
+#********************************************************************************************************
+
+
 orderDf['getOnTime'] = orderDf['getOffTime'] = orderDf['vehicId'] = -1
 dis=distance.cdist(orderDf[['ox','oy']], stationDf[['x','y']], 'cityblock')
 minIndex=np.argmin(dis,1)
@@ -102,10 +193,7 @@ orderDf[['os','ds']]=orderDf[['os','ds']].astype(int)
 #orderDf['ds']=orderDf['ds'].apply(int)
 orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
 
-'''
-code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
-'''
-orderDf.loc[8253,'orderTime']=1627
+startTime=np.min(orderDf['orderTime'])
 print "%d orders loaded."%(len(orderDf))
 
 
@@ -131,7 +219,7 @@ down=np.min(stationDf['y'])
 up=np.max(stationDf['y'])
 vehicDf['x']=[(left+right)/2.0 for _ in range(len(vehicDf))]
 vehicDf['y']=[(down+up)/2.0 for _ in range(len(vehicDf))]
-vehicDf['time']=0
+vehicDf['time']=startTime
 vehicDf['nextStop'] =-1
 print "%d vechicles created."%(len(vehicDf))
 #print vehicDf
@@ -149,21 +237,10 @@ eventDf['eventType'] = 'order'
 
 print "%d events added to the eventlist."%(len(eventDf))
 
-
-
-def processPrint(edf,vdf):
-    print
-    print '-----------------------eventDF-----------------------'
-    print edf
-    print '-----------------------vehicleDF-----------------------'
-    print vdf
-    print '-----------------------DF end-----------------------'
-    print
-
 ## simulation ##
 print
 print "Simulation started."
-processPrint(eventDf, vehicDf)
+#processPrint(eventDf, vehicDf)
 sys.stdout.flush()
 
 lostOrder = 0
@@ -172,7 +249,9 @@ while len(eventDf) != 0:
     
     evInx = eventDf['time'].idxmin()
     nextEvent = eventDf.loc[evInx, :]
-    vehicDf=updateVehiclePos(nextEvent['time'], vehicDf)
+    vehicDf=updateVehiclePos(nextEvent['time'], vehicDf,stationDf)
+    
+    print '\t Vehicle position updated.'
 
     print "\t handling event %d, event time is %d, event type is '%s'."%(evInx,nextEvent['time'],nextEvent['eventType'])
     
@@ -203,8 +282,11 @@ while len(eventDf) != 0:
         eventId = nextEvent['eventId']
         vehicId=nextEvent['vehicId']
         vehicDf=getOff(eventId, vehicId,orderDf,vehicDf,eventDf,stationDf)
-        
+    generatePNG(evInx)
     eventDf=eventDf.drop(evInx)
     print "\t\t event %d completed."%(evInx)
-    processPrint(eventDf, vehicDf)
+    #processPrint(eventDf, vehicDf)
     sys.stdout.flush()
+    
+
+print "Completed."
