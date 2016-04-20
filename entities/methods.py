@@ -71,7 +71,7 @@ def updateVehiclePos(time,vdf,sdf):
 
 def searchVeh(oid,odf,vdf):
     #search for the appropriate vehicle, return the id of the vehicle.
-    return int(vdf.iloc[0,:]['vehicId'])
+    return int(0)
 
 def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
     #start from (x,y), traverse all the stations in slist.
@@ -97,7 +97,7 @@ def getRoute(x,y,startTime,onlist,offlist,pairlist,sdf):
                 legal=False
         
         if not legal:
-            break
+            continue
         
         #calc the cost for this sequence
         for s in seq:

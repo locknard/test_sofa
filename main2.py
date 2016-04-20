@@ -68,6 +68,7 @@ def generatePNG(eid):
     
     #waiting order
     orderEvent=eventDf.loc[eventDf['eventType']!='getOff']
+    print orderEvent
     waitingOrder=list((orderEvent['eventId']/10).apply(int))
     waitingx=orderDf.loc[waitingOrder,'ox']
     waitingy=orderDf.loc[waitingOrder,'oy']
@@ -84,9 +85,6 @@ def generatePNG(eid):
     fig.savefig("png/"+str(int(time))+"_"+str(eid)+".png",dpi=90,format='png')
     plt.close('all')
     
-
-
-
 
 print 
 print "Program started at",datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -157,9 +155,20 @@ orderDf['dx']=orderDf['dx']-left
 orderDf['oy']=orderDf['oy']-down
 orderDf['dy']=orderDf['dy']-down
 
-# columns of orderDf: orderId, o_lat, o_lng, d_lat, d_lng, orderTime,
-# getOnTime, getOffTime, vehicId.
 orderDf.index = orderDf['orderId']
+
+#********************************************************************************************************
+'''
+code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
+'''
+orderDf.loc[8253,'orderTime']=1627
+orderDf.loc[8253,'ox']=orderDf.loc[8253,'ox']+3100
+orderDf.loc[8253,'oy']=orderDf.loc[8253,'oy']+400
+orderDf.loc[8253,'dx']=orderDf.loc[8253,'dx']+4000
+orderDf.loc[8253,'dy']=orderDf.loc[8253,'dy']+1300
+#********************************************************************************************************
+
+
 orderDf['getOnTime'] = orderDf['getOffTime'] = orderDf['vehicId'] = -1
 dis=distance.cdist(orderDf[['ox','oy']], stationDf[['x','y']], 'cityblock')
 minIndex=np.argmin(dis,1)
@@ -175,10 +184,6 @@ orderDf[['os','ds']]=orderDf[['os','ds']].astype(int)
 orderDf['ETA'] = orderDf.apply(mt.getEta,axis=1)
 
 startTime=np.min(orderDf['orderTime'])
-'''
-code below modified the  time of the order 82530 so that these 2 orders are in adjacent time.
-'''
-orderDf.loc[8253,'orderTime']=1627
 print "%d orders loaded."%(len(orderDf))
 
 
@@ -225,7 +230,7 @@ print "%d events added to the eventlist."%(len(eventDf))
 ## simulation ##
 print
 print "Simulation started."
-#processPrint(eventDf, vehicDf)
+processPrint(eventDf, vehicDf)
 sys.stdout.flush()
 
 lostOrder = 0
