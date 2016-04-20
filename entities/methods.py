@@ -24,6 +24,7 @@ sdf:'stationId','lng','lat','x','y'
 sdf.index= (automatic)
 '''
 
+
 def updateVehiclePos(time,vdf,sdf):
     #based on the event time, update the positions of vehicles.
     speed=10.0
